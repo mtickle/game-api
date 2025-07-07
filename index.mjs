@@ -34,10 +34,10 @@ app.use(morgan('common', {
 
 //--- Routes
 // //--- Name and implement the ROUTES
-import routes from 'routes.js';
+import routes from './routes.js';
 app.use('/api', routes)
 
 //--- Open the SERVER
 app.listen(3001, () => {
-    console.log(`API listening on ${8080}`)
+    console.log(`API listening on ${3001}`)
 })

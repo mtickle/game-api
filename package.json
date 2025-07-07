@@ -1,7 +1,22 @@
 {
+  "name": "game-api",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "index.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.mjs"
+  },
+  "author": "",
+  "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",
+    "dotenv": "^17.0.1",
     "express": "^5.1.0",
-    "mongodb": "^6.17.0"
+    "express-rate-limit": "^7.5.1",
+    "mongodb": "^6.17.0",
+    "morgan": "^1.10.0",
+    "pg": "^8.16.3"
   }
 }
