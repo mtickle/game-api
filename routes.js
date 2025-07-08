@@ -28,47 +28,6 @@ const pool = new pg.Pool({
 
 
 ///--- GAME RESULTS ENDPOINT
-//--- This endpoint is used to post game results to the database
-// router.post("/postGameResults", async (req, res) => {
-
-//     const gameNumber = req.body.scores.gameNumber;
-//     const gamePlayer = req.body.scores.playerName;
-//     const ones = req.body.scores.ones;
-//     const twos = req.body.scores.twos;
-//     const threes = req.body.scores.threes;
-//     const fours = req.body.scores.fours;
-//     const fives = req.body.scores.fives;
-//     const sixes = req.body.scores.sixes;
-//     const evens = req.body.scores.evens;
-//     const odds = req.body.scores.odds;
-//     const onePair = req.body.scores.onePair;
-//     const twoPair = req.body.scores.twoPair;
-//     const threeOfAKind = req.body.scores.threeKind;
-//     const fourOfAKind = req.body.scores.fourKind;
-//     const fullHouse = req.body.scores.fullHouse;
-//     const smallStraight = req.body.scores.smallStraight;
-//     const largeStraight = req.body.scores.largeStraight;
-//     const yahtzee = req.body.scores.yahtzee;
-//     const chance = req.body.scores.chance;
-//     const upperTotal = req.body.scores.upperSubtotal;
-//     const upperBonus = req.body.scores.bonus;
-//     const lowerTotal = req.body.scores.lowerTotal;
-//     const grandTotal = req.body.scores.grandTotal;
-
-//     const query = `CALL public.add_game_result('${gameNumber}', '${gamePlayer}','${ones}', '${twos}', '${threes}', '${fours}', '${fives}', '${sixes}', '${evens}', '${odds}', '${onePair}', '${twoPair}', '${threeOfAKind}', '${fourOfAKind}', '${fullHouse}', '${smallStraight}', '${largeStraight}', '${yahtzee}', '${chance}', '${upperTotal}', '${upperBonus}', '${lowerTotal}', '${grandTotal}');`
-
-//     try {
-//         const result = await pool.query(query);
-//         res.json(result.rows);
-//         console.log(res.status)
-
-//     } catch (error) {
-//         console.log(error);
-//         res.status(500).json({ message: error.message });
-//     }
-
-// });
-
 router.post("/postGameResults", async (req, res) => {
     const {
         gameNumber,
@@ -143,7 +102,6 @@ router.post("/postGameResults", async (req, res) => {
     }
 });
 
-
 router.post("/postGameTurns", async (req, res) => {
     const turns = req.body;
 
@@ -192,6 +150,27 @@ router.post("/postGameTurns", async (req, res) => {
         }
     }
 });
+
+router.get("/getGameResults/:_gameplayer", async (req, res) => {
+    const query = `
+        SELECT * FROM public.gameresults
+        where gameplayer = $1
+        ORDER BY gamenumber DESC;
+    `;
+    const values = [req.params._gameplayer];
+
+    try {
+        const result = await pool.query(query, values);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching game results:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+});
+
+
 
 
 export default router;
