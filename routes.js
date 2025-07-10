@@ -40,13 +40,13 @@ router.post("/postGameResults", async (req, res) => {
         sixes,
         evens,
         odds,
-        onePair,
-        twoPair,
-        threeKind,
-        fourKind,
-        fullHouse,
-        smallStraight,
-        largeStraight,
+        onepair,
+        twopair,
+        threeofakind,
+        fourofakind,
+        fullhouse,
+        smallstraight,
+        largestraight,
         yahtzee,
         chance,
         upperSubtotal,
@@ -63,6 +63,8 @@ router.post("/postGameResults", async (req, res) => {
         );
     `;
 
+
+
     const values = [
         gameNumber,
         playerName,
@@ -74,13 +76,13 @@ router.post("/postGameResults", async (req, res) => {
         sixes,
         evens,
         odds,
-        onePair,
-        twoPair,
-        threeKind,
-        fourKind,
-        fullHouse,
-        smallStraight,
-        largeStraight,
+        onepair,
+        twopair,
+        threeofakind,
+        fourofakind,
+        fullhouse,
+        smallstraight,
+        largestraight,
         yahtzee,
         chance,
         upperSubtotal,
@@ -89,7 +91,7 @@ router.post("/postGameResults", async (req, res) => {
         grandTotal
     ];
 
-    // console.log(`Executing query for game ${gameNumber}, ${query} with values: ${values}`);
+    //console.log(`Executing query for game ${gameNumber}, ${query} with values: ${values}`);
 
     try {
         await pool.query(query, values);
@@ -114,6 +116,7 @@ router.post("/postGameTurns", async (req, res) => {
         for (const turn of turns) {
             const {
                 gameNumber,
+                playerName,
                 turnNumber,
                 rollCount,
                 category,
@@ -123,12 +126,13 @@ router.post("/postGameTurns", async (req, res) => {
 
             // Use parameter placeholders ($1, $2, etc.)
             const query = `
-                CALL public.add_turn_result($1, $2, $3, $4, $5, $6);
+                CALL public.add_turn_result($1, $2, $3, $4, $5, $6, $7);
             `;
 
             // Provide values in exact order
             const values = [
                 gameNumber,
+                playerName,
                 turnNumber,
                 rollCount,
                 category,
@@ -170,6 +174,9 @@ router.get("/getGameResults/:_gameplayer", async (req, res) => {
     }
 });
 
+
+// router.get("/getGameTurns/:_gameplayer", async (req, res) => {
+//     const query = `
 
 
 
