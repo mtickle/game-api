@@ -24,9 +24,6 @@ const pool = new pg.Pool({
     connectionTimeoutMillis: 2000,
 });
 
-
-
-
 ///--- GAME RESULTS ENDPOINT
 router.post("/postGameResults", async (req, res) => {
     const {
@@ -121,12 +118,13 @@ router.post("/postGameTurns", async (req, res) => {
                 rollCount,
                 category,
                 score,
-                bonus
+                bonus,
+                dice
             } = turn;
 
             // Use parameter placeholders ($1, $2, etc.)
             const query = `
-                CALL public.add_turn_result($1, $2, $3, $4, $5, $6, $7);
+                CALL public.add_turn_result($1, $2, $3, $4, $5, $6, $7, $8);
             `;
 
             // Provide values in exact order
@@ -137,7 +135,8 @@ router.post("/postGameTurns", async (req, res) => {
                 rollCount,
                 category,
                 score,
-                bonus
+                bonus,
+                dice
             ];
 
             //console.log(`Executing query for game ${gameNumber}, turn ${turnNumber}: ${query} with values: ${values}`);
@@ -155,7 +154,7 @@ router.post("/postGameTurns", async (req, res) => {
     }
 });
 
-router.get("/getGameResults/:_gameplayer", async (req, res) => {
+router.get("/getAllGameResults/:_gameplayer", async (req, res) => {
     const query = `
         SELECT * FROM public.gameresults
         where gameplayer = $1
@@ -174,10 +173,26 @@ router.get("/getGameResults/:_gameplayer", async (req, res) => {
     }
 });
 
+router.get('/getAllTurnResults/:gameplayer', async (req, res) => {
 
-// router.get("/getGameTurns/:_gameplayer", async (req, res) => {
-//     const query = `
+    const query = `
+        SELECT gamenumber, gameplayer, turnnumber, rollcount, category, score, COALESCE(bonus, 0) AS bonus, dice
+        FROM public.turnresults
+        WHERE gameplayer = $1
+        ORDER BY gamenumber DESC;
+    `;
 
+    const values = [req.params.gameplayer];
 
+    try {
+        const result = await pool.query(query, values);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error(`Error fetching TURN results for ${req.params.gameplayer}:`, error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+});
 
 export default router;
