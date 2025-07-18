@@ -176,10 +176,10 @@ router.get("/getAllGameResults/:_gameplayer", async (req, res) => {
 router.get('/getAllTurnResults/:gameplayer', async (req, res) => {
 
     const query = `
-        SELECT gamenumber, gameplayer, turnnumber, rollcount, category, score, COALESCE(bonus, 0) AS bonus, dice
-        FROM public.turnresults
-        WHERE gameplayer = $1
-        ORDER BY gamenumber DESC;
+SELECT gamenumber, gameplayer, turnnumber, rollcount, category, score, COALESCE(bonus, 0) AS bonus, dice
+FROM public.turnresults
+WHERE gameplayer = $1
+ORDER BY gamenumber DESC, turnnumber ASC;
     `;
 
     const values = [req.params.gameplayer];
@@ -194,5 +194,36 @@ router.get('/getAllTurnResults/:gameplayer', async (req, res) => {
         }
     }
 });
+
+router.get('/getTurnsByGame/:gameplayer/:gamenumber', async (req, res) => {
+
+    const query = `
+    SELECT gamenumber, gameplayer, turnnumber, rollcount, category, score, COALESCE(bonus, 0) AS bonus, dice
+    FROM public.turnresults
+   WHERE gameplayer = $1 AND gamenumber = $2::BIGINT
+    ORDER BY turnnumber ASC;
+      `;
+
+    console.log('Fetching turns for:', {
+        player: req.params.gameplayer,
+        gamenumber: req.params.gamenumber,
+        gamenumberType: typeof req.params.gamenumber
+    });
+
+    const values = [req.params.gameplayer, req.params.gamenumber];
+
+    console.log(query)
+
+    try {
+        const result = await pool.query(query, values);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error(`Error fetching TURN results for ${req.params.gameplayer}:`, error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+});
+
 
 export default router;
