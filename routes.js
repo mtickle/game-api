@@ -155,6 +155,9 @@ router.post("/postGameTurns", async (req, res) => {
 });
 
 router.get("/getAllGameResults/:_gameplayer", async (req, res) => {
+
+    console.log(`Fetching game results for player: ${req.params._gameplayer}`);
+
     const query = `
         SELECT * FROM public.gameresults
         where gameplayer = $1
@@ -194,6 +197,21 @@ ORDER BY gamenumber DESC, turnnumber ASC;
         }
     }
 });
+
+router.get('/getGameAverages/', async (req, res) => {
+    const query = `SELECT * from public.get_game_averages();`;
+
+    try {
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error(`Error fetching game averages:`, error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+});
+
 
 router.get('/getTurnsByGame/:gameplayer/:gamenumber', async (req, res) => {
 
