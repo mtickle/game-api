@@ -243,5 +243,33 @@ router.get('/getTurnsByGame/:gameplayer/:gamenumber', async (req, res) => {
     }
 });
 
+//--- STAR SYSTEM ENDPOINT
+router.post("/postStarSystem", async (req, res) => {
+    const starSystem = req.body; // Expect the entire star system JSON as the body
+
+    // Validate that the request body is a valid object
+    if (!starSystem || typeof starSystem !== 'object') {
+        console.log("Invalid input: Expected a star system JSON object");
+        return res.status(400).json({ message: "Expected a star system JSON object" });
+    }
+
+    const query = `
+        SELECT star_system.upsert_star_system($1::jsonb);
+    `;
+
+    const values = [starSystem];
+
+    // console.log(`Executing query for star system ${starSystem.starId}: ${query} with values: ${JSON.stringify(values)}`);
+
+    try {
+        await pool.query(query, values);
+        res.status(200).json({ message: "Star system saved successfully." });
+    } catch (error) {
+        console.error("Error saving star system:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+});
 
 export default router;
