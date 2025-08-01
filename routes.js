@@ -305,5 +305,43 @@ router.post("/postCardGame", async (req, res) => {
     }
 });
 
+router.get("/getAllGameResults", async (req, res) => {
+    console.log(`Fetching all game results`);
+
+    const query = `
+        SELECT 
+            game_id,
+            game_timestamp,
+            winner,
+            json_agg(
+                json_build_object(
+                    'playerIndex', player_index,
+                    'score', score
+                ) ORDER BY player_index
+            ) AS final_scores,
+            turn_history
+        FROM card_game.game_summary
+        GROUP BY game_id, game_timestamp, winner, turn_history
+        ORDER BY game_timestamp DESC;
+    `;
+
+    try {
+        const result = await pool.query(query);
+        // Transform the result to match the expected JSON structure
+        const formattedResult = result.rows.map(row => ({
+            gameId: row.game_id,
+            timestamp: row.game_timestamp,
+            winner: row.winner,
+            finalScores: row.final_scores.map(score => score.score),
+            turnHistory: row.turn_history
+        }));
+        res.status(200).json(formattedResult);
+    } catch (error) {
+        console.error("Error fetching game results:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+});
 
 export default router;
