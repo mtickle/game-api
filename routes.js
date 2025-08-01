@@ -272,4 +272,38 @@ router.post("/postStarSystem", async (req, res) => {
     }
 });
 
+// CARD GAME ENDPOINT
+router.post("/postCardGame", async (req, res) => {
+    const gameData = req.body; // Expect the entire card game JSON as the body
+
+    // Validate that the request body is a valid object with required fields
+    if (!gameData || typeof gameData !== 'object' || !gameData.gameId || !gameData.timestamp || !gameData.winner || !Array.isArray(gameData.finalScores) || !Array.isArray(gameData.turnHistory)) {
+        console.log("Invalid input: Expected a card game JSON object with gameId, timestamp, winner, finalScores, and turnHistory");
+        return res.status(400).json({ message: "Expected a card game JSON object with gameId, timestamp, winner, finalScores, and turnHistory" });
+    }
+
+    const query = `
+        SELECT card_game.save_game($1::uuid, $2::bigint, $3::varchar, $4::integer[], $5::json);
+    `;
+
+    const values = [
+        gameData.gameId,
+        gameData.timestamp,
+        gameData.winner,
+        gameData.finalScores,
+        JSON.stringify(gameData.turnHistory)
+    ];
+
+    try {
+        await pool.query(query, values);
+        res.status(200).json({ message: "Card game saved successfully." });
+    } catch (error) {
+        console.error("Error saving card game:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+});
+
+
 export default router;
