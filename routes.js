@@ -305,24 +305,27 @@ router.post("/postCardGame", async (req, res) => {
     }
 });
 
+// In your routes.js file
+
 router.get("/getAllGameResults", async (req, res) => {
     console.log(`Fetching all game results`);
 
+    // UPDATED QUERY: Replaced MAX() with a more explicit way to select the JSON data
     const query = `
         SELECT 
-            game_id,
-            game_timestamp,
-            winner,
+            g.game_id,
+            g.game_timestamp,
+            g.winner,
             json_agg(
                 json_build_object(
-                    'playerIndex', player_index,
-                    'score', score
-                ) ORDER BY player_index
+                    'playerIndex', g.player_index,
+                    'score', g.score
+                ) ORDER BY g.player_index
             ) AS final_scores,
-            turn_history
-        FROM card_game.game_summary
-        GROUP BY game_id, game_timestamp, winner, turn_history
-        ORDER BY game_timestamp DESC;
+            (array_agg(g.turn_history))[1] AS turn_history
+        FROM card_game.game_summary g
+        GROUP BY g.game_id, g.game_timestamp, g.winner
+        ORDER BY g.game_timestamp DESC;
     `;
 
     try {
@@ -332,7 +335,7 @@ router.get("/getAllGameResults", async (req, res) => {
             gameId: row.game_id,
             timestamp: row.game_timestamp,
             winner: row.winner,
-            finalScores: row.final_scores.map(score => score.score),
+            finalScores: row.final_scores.map(scoreObj => scoreObj.score),
             turnHistory: row.turn_history
         }));
         res.status(200).json(formattedResult);
