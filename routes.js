@@ -307,7 +307,7 @@ router.post("/postCardGame", async (req, res) => {
 
 // In your routes.js file
 
-router.get("/getAllGameResults", async (req, res) => {
+router.get("/getAllCardGames", async (req, res) => {
     console.log(`Fetching all game results`);
 
     // UPDATED QUERY: Replaced MAX() with a more explicit way to select the JSON data
