@@ -24,6 +24,83 @@ const pool = new pg.Pool({
     connectionTimeoutMillis: 2000,
 });
 
+
+router.post("/postTicTacToeGames", async (req, res) => {
+    const gamesBatch = req.body; // Expect an array of game result objects
+
+    // --- Validation ---
+    // 1. Check if the body is a non-empty array
+    if (!Array.isArray(gamesBatch) || gamesBatch.length === 0) {
+        console.log("Invalid input: Expected a non-empty array of game results.");
+        return res.status(400).json({ message: "Request body must be a non-empty array of game results." });
+    }
+
+    // 2. Check the structure of the first object in the array for validity.
+    // (A full implementation would loop and check every object)
+    const sampleGame = gamesBatch[0];
+    if (!sampleGame || typeof sampleGame !== 'object' || !sampleGame.id || !sampleGame.outcome || typeof sampleGame.totalMoves !== 'number' || !Array.isArray(sampleGame.finalBoardState) || !Array.isArray(sampleGame.moves) || !sampleGame.finishedAt) {
+        console.log("Invalid input: Game result objects are missing required fields.");
+        return res.status(400).json({ message: "Each game result object must include id, outcome, totalMoves, finalBoardState, moves, and finishedAt." });
+    }
+
+    console.log(`Received batch of ${gamesBatch.length} Tic-Tac-Toe games to save.`);
+
+    // --- Database Query ---
+    // This query assumes you have a PostgreSQL function that can take a JSON array
+    // of game data and process it, likely inserting each object into a table.
+    // This is more efficient than sending one query per game.
+    const query = `
+        SELECT tic_tac_toe.save_game_batch($1::jsonb);
+    `;
+
+    const values = [
+        JSON.stringify(gamesBatch)
+    ];
+
+    try {
+        await pool.query(query, values);
+        res.status(200).json({ message: `Successfully saved batch of ${gamesBatch.length} games.` });
+    } catch (error) {
+        console.error("Error saving Tic-Tac-Toe game batch:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+});
+
+
+router.get("/getTicTacToeGames", async (req, res) => {
+    // This query selects all fields from the games table.
+    // It orders them by the finished_at timestamp in descending order (most recent first)
+    // and limits the result to the latest 100 games to avoid sending huge amounts of data.
+    const query = `
+        SELECT 
+            id,
+            outcome,
+            total_moves,
+            final_board_state,
+            moves,
+            finished_at
+        FROM 
+            tic_tac_toe.games
+        ORDER BY 
+            finished_at DESC
+        LIMIT 100;
+    `;
+
+    try {
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error retrieving Tic-Tac-Toe games:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+});
+
+
+
 ///--- GAME RESULTS ENDPOINT
 router.post("/postGameResults", async (req, res) => {
     const {
