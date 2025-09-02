@@ -24,6 +24,53 @@ const pool = new pg.Pool({
     connectionTimeoutMillis: 2000,
 });
 
+router.post("/postBlackjackGames", async (req, res) => {
+    const gamesBatch = req.body; // Expects an array of game result objects directly in the body
+
+    // --- Validation ---
+    // 1. Check if the body is a non-empty array
+    if (!Array.isArray(gamesBatch) || gamesBatch.length === 0) {
+        console.log("Invalid input: Expected a non-empty array of game results.");
+        return res.status(400).json({ message: "Request body must be a non-empty array of game results." });
+    }
+
+    // 2. Perform a structural check on the first game object to ensure it has the required fields.
+    // A full production implementation might loop through every object for complete validation.
+    const sampleGame = gamesBatch[0];
+    const requiredKeys = [
+        'gameId', 'timestamp', 'result', 'betAmount', 'netWinnings',
+        'playerWallet_start', 'playerWallet_end', 'playerHands', 'dealerHand'
+    ];
+    const missingKey = requiredKeys.find(key => !(key in sampleGame));
+
+    if (missingKey) {
+        console.log(`Invalid input: Game result objects are missing the required field: "${missingKey}".`);
+        return res.status(400).json({ message: `Each game result object must include all required fields. Missing: ${missingKey}` });
+    }
+
+    console.log(`Received batch of ${gamesBatch.length} Blackjack games to save.`);
+
+    // --- Database Query ---
+    // This query calls a PostgreSQL function that takes the entire JSON array
+    // and processes the batch insert within a single transaction.
+    const query = `
+        SELECT blackjack.save_game_batch($1::jsonb);
+    `;
+
+    const values = [
+        JSON.stringify(gamesBatch)
+    ];
+
+    try {
+        await pool.query(query, values);
+        res.status(200).json({ message: `Successfully saved batch of ${gamesBatch.length} Blackjack games.` });
+    } catch (error) {
+        console.error("Error saving Blackjack game batch:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: "An error occurred while saving the game data.", error: error.message });
+        }
+    }
+});
 
 router.post("/postTicTacToeGames", async (req, res) => {
     const gamesBatch = req.body; // Expect an array of game result objects
