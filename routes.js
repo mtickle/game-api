@@ -90,9 +90,7 @@ router.get("/getBlackjackGames", async (req, res) => {
         FROM 
             blackjack.blackjack_games
         ORDER BY 
-            played_at DESC
-        LIMIT 100;
-    `;
+            played_at DESC`;
 
     try {
         const result = await pool.query(query);
