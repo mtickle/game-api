@@ -72,6 +72,69 @@ router.post("/postBlackjackGames", async (req, res) => {
     }
 });
 
+router.get("/getBlackjackGames", async (req, res) => {
+    // This query selects all the relevant fields from the blackjack.games table.
+    // It orders them by the played_at timestamp in descending order (most recent first)
+    // and limits the result to the latest 100 games to prevent sending huge payloads.
+    const query = `
+        SELECT 
+            game_id,
+            played_at,
+            result,
+            bet_amount,
+            net_winnings,
+            wallet_start,
+            wallet_end,
+            player_hands,
+            dealer_hand
+        FROM 
+            blackjack.games
+        ORDER BY 
+            played_at DESC
+        LIMIT 100;
+    `;
+
+    try {
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error retrieving Blackjack games:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: "An error occurred while retrieving game data.", error: error.message });
+        }
+    }
+});
+
+router.get("/getTicTacToeGames", async (req, res) => {
+    // This query selects all fields from the games table.
+    // It orders them by the finished_at timestamp in descending order (most recent first)
+    // and limits the result to the latest 100 games to avoid sending huge amounts of data.
+    const query = `
+        SELECT 
+            id,
+            outcome,
+            total_moves,
+            final_board_state,
+            moves,
+            finished_at
+        FROM 
+            tic_tac_toe.games
+        ORDER BY 
+            finished_at DESC
+        LIMIT 100;
+    `;
+
+    try {
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error retrieving Tic-Tac-Toe games:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+});
+
 router.post("/postTicTacToeGames", async (req, res) => {
     const gamesBatch = req.body; // Expect an array of game result objects
 
