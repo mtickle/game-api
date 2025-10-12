@@ -88,7 +88,7 @@ router.get("/getBlackjackGames", async (req, res) => {
             player_hands,
             dealer_hand
         FROM 
-            blackjack.games
+            blackjack.blackjack_games
         ORDER BY 
             played_at DESC
         LIMIT 100;
