@@ -207,7 +207,49 @@ router.get("/getTicTacToeGames", async (req, res) => {
     }
 });
 
+router.post("/postShowdownGames", async (req, res) => {
+    const gamesBatch = req.body;
 
+    // --- Validation ---
+    if (!Array.isArray(gamesBatch) || gamesBatch.length === 0) {
+        console.log("Invalid input: Expected a non-empty array of Showdown games.");
+        return res.status(400).json({ message: "Request body must be a non-empty array of game results." });
+    }
+
+    const sampleGame = gamesBatch[0];
+    if (
+        !sampleGame ||
+        typeof sampleGame !== 'object' ||
+        !sampleGame.gameId ||
+        !sampleGame.playedAt ||
+        !Array.isArray(sampleGame.players)
+    ) {
+        console.log("Invalid input: Game result objects are missing required fields.");
+        return res.status(400).json({ message: "Each game result object must include gameId, playedAt, and a players array." });
+    }
+
+    console.log(`Received batch of ${gamesBatch.length} Showdown games to save.`);
+
+    // --- Database Query ---
+    // Passing the entire payload to the DB engine for high-performance shredding
+    const query = `
+        SELECT showdowns.save_game_batch($1::jsonb);
+    `;
+
+    const values = [
+        JSON.stringify(gamesBatch)
+    ];
+
+    try {
+        await pool.query(query, values);
+        res.status(200).json({ message: `Successfully saved batch of ${gamesBatch.length} Showdown games.` });
+    } catch (error) {
+        console.error("Error saving Showdown game batch:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+});
 
 ///--- GAME RESULTS ENDPOINT
 router.post("/postGameResults", async (req, res) => {
