@@ -4,6 +4,7 @@ import { Router } from "express";
 import fs from 'fs';
 import pg from 'pg';
 const router = Router();
+const now = () => new Date().toISOString();
 
 //--- PostgreSQL configuration
 dotenv.config()
@@ -228,13 +229,15 @@ router.post("/postShowdownGames", async (req, res) => {
         return res.status(400).json({ message: "Each game result object must include gameId, playedAt, and a players array." });
     }
 
-    console.log(`Received batch of ${gamesBatch.length} Showdown games to save.`);
+    console.log(now + `: Received batch of ${gamesBatch.length} Showdown games to save.`);
 
     // --- Database Query ---
     // Passing the entire payload to the DB engine for high-performance shredding
     const query = `
         SELECT showdowns.save_game_batch($1::jsonb);
     `;
+
+
 
     const values = [
         JSON.stringify(gamesBatch)
@@ -243,8 +246,45 @@ router.post("/postShowdownGames", async (req, res) => {
     try {
         await pool.query(query, values);
         res.status(200).json({ message: `Successfully saved batch of ${gamesBatch.length} Showdown games.` });
+        console.log(now + `: Successfully saved batch of ${gamesBatch.length} Showdown games.`);
+        await pool.query('REFRESH MATERIALIZED VIEW showdowns.studio_kpis;');
     } catch (error) {
         console.error("Error saving Showdown game batch:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+});
+
+router.get("/getShowdownGames", async (req, res) => {
+    try {
+        // 1. Grab the single row of math from your Materialized View
+        const kpiResult = await pool.query('SELECT * FROM showdowns.studio_kpis;');
+
+        // 2. Grab the 20 most recent games for the Grid View
+        // (We don't need the JSON aggregation here anymore since the grid doesn't show player turns!)
+        const gamesQuery = `
+            SELECT 
+                s.game_id AS "gameId",
+                s.played_at AS "playedAt",
+                s.winner_index AS "winnerIndex",
+                s.winning_score AS "winningScore",
+                s.went_to_spin_off AS "wentToSpinOff",
+                COALESCE((SELECT SUM(bonus_cash_won) FROM showdowns.player_turns pt WHERE pt.game_id = s.game_id), 0) AS "totalWinnings"
+            FROM showdowns.showdowns s
+            ORDER BY s.played_at DESC
+            LIMIT 20;
+        `;
+        const gamesResult = await pool.query(gamesQuery);
+
+        // 3. Send them BOTH back as one object
+        res.status(200).json({
+            stats: kpiResult.rows[0] || null, // Send just the single stats object
+            recentGames: gamesResult.rows       // Send the array of games
+        });
+
+    } catch (error) {
+        console.error("Error retrieving Showdown dashboard data:", error);
         if (!res.headersSent) {
             res.status(500).json({ message: error.message });
         }

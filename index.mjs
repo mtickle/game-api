@@ -25,6 +25,7 @@ const app = express();
 app.use(json());
 app.use(limiter);
 app.use(cors(corsOptions));
+app.use(express.urlencoded({ extended: true }));
 
 
 //--- Logging
